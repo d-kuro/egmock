@@ -1,7 +1,9 @@
 package main
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"log"
@@ -19,7 +21,35 @@ type mock struct {
 	status int
 }
 
+type Request struct {
+	Protocol    string `json:"protocol"`
+	RemoteAddr  string `json:"remote_addr"`
+	ContentType string `json:"content_type"`
+	Method      string `json:"method"`
+	Path        string `json:"path"`
+	Query       string `json:"query"`
+	Body        string `json:"body"`
+}
+
 func (m *mock) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	bufBody := new(bytes.Buffer)
+	bufBody.ReadFrom(r.Body)
+
+	request := Request{
+		Protocol:    r.Proto,
+		RemoteAddr:  r.RemoteAddr,
+		ContentType: r.Header.Get("Content-Type"),
+		Method:      r.Method,
+		Path:        r.URL.Path,
+		Query:       r.URL.RawQuery,
+		Body:        bufBody.String(),
+	}
+	jsonBytes, err := json.Marshal(request)
+	if err != nil {
+		eLog.Println("json marshal error:", err)
+	}
+	iLog.Println(string(jsonBytes))
+
 	w.WriteHeader(m.status)
 	return
 }
