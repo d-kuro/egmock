@@ -18,7 +18,8 @@ var (
 )
 
 type mock struct {
-	status int
+	status  int
+	resBody string
 }
 
 type Request struct {
@@ -31,6 +32,8 @@ type Request struct {
 }
 
 func (m *mock) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+
+	// request logging
 	go func() {
 		bufBody := new(bytes.Buffer)
 		bufBody.ReadFrom(r.Body)
@@ -51,6 +54,8 @@ func (m *mock) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}()
 
 	w.WriteHeader(m.status)
+	w.Header().Set("Content-Type", "application/json")
+	w.Write([]byte(m.resBody))
 	return
 }
 
@@ -60,8 +65,9 @@ func init() {
 }
 
 func main() {
-	port := flag.String("p", "8080", "Listen port number")
 	status := flag.Int("s", 200, "HTTP status code")
+	port := flag.String("p", "8080", "listen port number")
+	body := flag.String("d", "", "response body")
 	flag.Parse()
 
 	if len(flag.Args()) < 1 {
@@ -69,7 +75,10 @@ func main() {
 	}
 	path := flag.Arg(0)
 
-	http.Handle(path, &mock{status: *status})
+	http.Handle(path, &mock{
+		status:  *status,
+		resBody: *body,
+	})
 
 	srv := &http.Server{Addr: ":" + *port}
 	defer func() {
@@ -83,7 +92,8 @@ func main() {
 	}()
 
 	go func() {
-		iLog.Printf("curl -i http://localhost:%s%s\n", *port, path)
+		iLog.Println("start mock server")
+		iLog.Printf("curl http://localhost:%s%s\n", *port, path)
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			eLog.Println("listen and serve error:", err)
 		}
