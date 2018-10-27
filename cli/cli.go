@@ -42,15 +42,6 @@ func Run(args []string) int {
 	http.Handle(path, serve.NewMock(*status, *body))
 
 	srv := &http.Server{Addr: ":" + *port}
-	defer func() {
-		// new line
-		fmt.Print("\n")
-		logger.ILog.Println("shutdown server")
-		ctx := context.Background()
-		if err := srv.Shutdown(ctx); err != nil {
-			logger.ELog.Println("shutdown server error:", err)
-		}
-	}()
 
 	exitCh := make(chan struct{})
 	go func() {
@@ -64,9 +55,20 @@ func Run(args []string) int {
 
 	sigCh := make(chan os.Signal)
 	signal.Notify(sigCh, os.Interrupt)
+
+	shutdown := func() {
+		// new line
+		fmt.Print("\n")
+		logger.ILog.Println("shutdown server")
+		ctx := context.Background()
+		if err := srv.Shutdown(ctx); err != nil {
+			logger.ELog.Println("shutdown server error:", err)
+		}
+	}
+
 	select {
 	case <-sigCh:
-		// execute defer func
+		shutdown()
 		return exitCodeOK
 	case <-exitCh:
 		return exitCodeServeError
