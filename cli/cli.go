@@ -53,7 +53,7 @@ func Run(args []string) int {
 		}
 	}()
 
-	sigCh := make(chan os.Signal)
+	sigCh := make(chan os.Signal, 1)
 	signal.Notify(sigCh, os.Interrupt)
 
 	shutdown := func() {
