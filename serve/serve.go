@@ -33,7 +33,11 @@ func NewMock(status int, resBody string) *Mock {
 func (m *Mock) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// request logging
 	bufBody := new(bytes.Buffer)
-	io.Copy(bufBody, r.Body)
+	_, err := io.Copy(bufBody, r.Body)
+	if err != nil {
+		logger.ELog.Println("get request body error:", err)
+		w.WriteHeader(500)
+	}
 
 	reqLog := RequestLog{
 		Protocol:    r.Proto,
@@ -47,11 +51,16 @@ func (m *Mock) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	jsonBytes, err := json.Marshal(reqLog)
 	if err != nil {
 		logger.ELog.Println("json marshal error:", err)
+		w.WriteHeader(500)
 	}
 	logger.ILog.Println(string(jsonBytes))
 
 	w.WriteHeader(m.status)
 	w.Header().Set("Content-Type", "application/json")
-	w.Write([]byte(m.resBody))
+	_, err = w.Write([]byte(m.resBody))
+	if err != nil {
+		logger.ELog.Println("write response body error:", err)
+		w.WriteHeader(500)
+	}
 	return
 }
