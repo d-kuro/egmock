@@ -9,7 +9,7 @@ import (
 	"github.com/d-kuro/egmock/logger"
 )
 
-type mock struct {
+type Mock struct {
 	status  int
 	resBody string
 }
@@ -23,14 +23,14 @@ type RequestLog struct {
 	Body        string `json:"body"`
 }
 
-func NewMock(status int, resBody string) *mock {
-	return &mock{
+func NewMock(status int, resBody string) *Mock {
+	return &Mock{
 		status:  status,
 		resBody: resBody,
 	}
 }
 
-func (m *mock) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (m *Mock) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// request logging
 	bufBody := new(bytes.Buffer)
 	io.Copy(bufBody, r.Body)

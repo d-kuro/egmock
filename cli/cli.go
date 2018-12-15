@@ -73,6 +73,4 @@ func Run(args []string) int {
 	case <-exitCh:
 		return exitCodeServeError
 	}
-
-	return exitCodeOK
 }
