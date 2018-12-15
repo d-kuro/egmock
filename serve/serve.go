@@ -62,5 +62,4 @@ func (m *Mock) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		logger.ELog.Println("write response body error:", err)
 		w.WriteHeader(500)
 	}
-	return
 }
