@@ -6,7 +6,9 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/d-kuro/egmock/logger"
+	"go.uber.org/zap"
+
+	"github.com/d-kuro/egmock/log"
 )
 
 type Mock struct {
@@ -35,7 +37,7 @@ func (m *Mock) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	bufBody := new(bytes.Buffer)
 	_, err := io.Copy(bufBody, r.Body)
 	if err != nil {
-		logger.ELog.Println("get request body error:", err)
+		log.Error("get request body error", zap.Error(err))
 		w.WriteHeader(500)
 	}
 
@@ -50,16 +52,16 @@ func (m *Mock) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	jsonBytes, err := json.Marshal(reqLog)
 	if err != nil {
-		logger.ELog.Println("json marshal error:", err)
+		log.Error("json marshal error", zap.Error(err))
 		w.WriteHeader(500)
 	}
-	logger.ILog.Println(string(jsonBytes))
+	log.Info(string(jsonBytes))
 
 	w.WriteHeader(m.status)
 	w.Header().Set("Content-Type", "application/json")
 	_, err = w.Write([]byte(m.resBody))
 	if err != nil {
-		logger.ELog.Println("write response body error:", err)
+		log.Error("write response body error", zap.Error(err))
 		w.WriteHeader(500)
 	}
 }
