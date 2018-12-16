@@ -8,9 +8,11 @@ import (
 	"os"
 	"os/signal"
 
+	"go.uber.org/zap"
+
 	"github.com/d-kuro/egmock/serve"
 
-	"github.com/d-kuro/egmock/logger"
+	"github.com/d-kuro/egmock/log"
 )
 
 const (
@@ -32,12 +34,12 @@ func Run(args []string) int {
 	}
 
 	if len(flags.Args()) < 1 {
-		logger.ELog.Println("invalid arguments")
+		log.Error("invalid arguments")
 		return exitCodeInvalidArguments
 	}
 	path := flags.Arg(0)
 
-	logger.ILog.Println("setup mock server...")
+	log.Info("setup mock server...")
 
 	http.Handle(path, serve.NewMock(*status, *body))
 
@@ -45,24 +47,24 @@ func Run(args []string) int {
 
 	exitCh := make(chan struct{})
 	go func() {
-		logger.ILog.Println("start mock server")
-		logger.ILog.Printf("curl http://localhost:%s%s\n", *port, path)
+		log.Info("start mock server")
+		log.Info("curl http://localhost:" + *port + path)
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			logger.ELog.Println("listen and serve error:", err)
+			log.Error("listen and serve error", zap.Error(err))
 			close(exitCh)
 		}
 	}()
 
-	sigCh := make(chan os.Signal)
+	sigCh := make(chan os.Signal, 1)
 	signal.Notify(sigCh, os.Interrupt)
 
 	shutdown := func() {
 		// new line
 		fmt.Print("\n")
-		logger.ILog.Println("shutdown server")
+		log.Info("shutdown mock server")
 		ctx := context.Background()
 		if err := srv.Shutdown(ctx); err != nil {
-			logger.ELog.Println("shutdown server error:", err)
+			log.Error("shutdown server error", zap.Error(err))
 		}
 	}
 
@@ -73,6 +75,4 @@ func Run(args []string) int {
 	case <-exitCh:
 		return exitCodeServeError
 	}
-
-	return exitCodeOK
 }

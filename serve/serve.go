@@ -6,10 +6,12 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/d-kuro/egmock/logger"
+	"go.uber.org/zap"
+
+	"github.com/d-kuro/egmock/log"
 )
 
-type mock struct {
+type Mock struct {
 	status  int
 	resBody string
 }
@@ -23,17 +25,21 @@ type RequestLog struct {
 	Body        string `json:"body"`
 }
 
-func NewMock(status int, resBody string) *mock {
-	return &mock{
+func NewMock(status int, resBody string) *Mock {
+	return &Mock{
 		status:  status,
 		resBody: resBody,
 	}
 }
 
-func (m *mock) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (m *Mock) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// request logging
 	bufBody := new(bytes.Buffer)
-	io.Copy(bufBody, r.Body)
+	_, err := io.Copy(bufBody, r.Body)
+	if err != nil {
+		log.Error("get request body error", zap.Error(err))
+		w.WriteHeader(500)
+	}
 
 	reqLog := RequestLog{
 		Protocol:    r.Proto,
@@ -46,12 +52,16 @@ func (m *mock) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	jsonBytes, err := json.Marshal(reqLog)
 	if err != nil {
-		logger.ELog.Println("json marshal error:", err)
+		log.Error("json marshal error", zap.Error(err))
+		w.WriteHeader(500)
 	}
-	logger.ILog.Println(string(jsonBytes))
+	log.Info(string(jsonBytes))
 
 	w.WriteHeader(m.status)
 	w.Header().Set("Content-Type", "application/json")
-	w.Write([]byte(m.resBody))
-	return
+	_, err = w.Write([]byte(m.resBody))
+	if err != nil {
+		log.Error("write response body error", zap.Error(err))
+		w.WriteHeader(500)
+	}
 }
