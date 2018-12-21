@@ -3,6 +3,7 @@ package serve
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 
@@ -59,9 +60,5 @@ func (m *Mock) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(m.status)
 	w.Header().Set("Content-Type", "application/json")
-	_, err = w.Write([]byte(m.resBody))
-	if err != nil {
-		log.Error("write response body error", zap.Error(err))
-		w.WriteHeader(500)
-	}
+	fmt.Fprintf(w, m.resBody)
 }
